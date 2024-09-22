@@ -17,11 +17,8 @@ Emplochat is a Streamlit application that allows users to interact with an AI ch
 ## Requirements
 
 - Python 3.8 or higher
-- Streamlit
 - openai == 0.28
-- Langchain
-- Chroma
-- scikit-learn
+- pysqlite3-binary
 
 ## Link to Streamlit
 
