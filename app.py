@@ -1,5 +1,4 @@
 import sys
-# Ensure compatibility with SQLite
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
@@ -39,7 +38,7 @@ class OpenAIClient:
 # Initialize the OpenAI client
 client = OpenAIClient(API_KEY)
 
-persist_directory = '/mount/src/Chatbot_Rag/embeddings'
+persist_directory = '/mount/src/Chatbot_multiagent/embeddings'
 
 # Initialize the Chroma DB client
 store = Chroma(persist_directory=persist_directory, collection_name="Capgemini_policy_embeddings")
@@ -58,6 +57,7 @@ def retrieve_vector_db(query, n_results=2):
         prev_embedding = embedding
     return results
 
+# Set the fine-tuned model
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "ft:gpt-3.5-turbo-0125:personal::A9eKNr3q"
 
@@ -74,6 +74,56 @@ if query := st.chat_input("Enter your query here?"):
     retrieved_results = retrieve_vector_db(query, n_results=3)
     context = ''.join([doc[0].page_content for doc in retrieved_results[:2]])
 
+    # Construct prompt for fine-tuned model
+    fine_tuned_prompt = f'''
+    You are an expert in Capgemini policies. Provide a detailed answer based on the context provided.
+    
+    Question: {query}
+    
+    Context: {context}
+    '''
+
+    st.session_state.messages.append({"role": "user", "content": query})
+
+    # Display the user message
+    with st.chat_message("user"):
+        st.markdown(query)
+
+    # --- 1. Fine-Tuned Model Response ---
+    with st.chat_message("assistant"):
+        response = client.chat(
+            model=st.session_state["openai_model"],
+            messages=[{"role": "system", "content": fine_tuned_prompt}],
+            stream=False
+        )
+        fine_tuned_response = response['choices'][0]['message']['content']
+        st.markdown(fine_tuned_response)
+
+    # Append the fine-tuned model response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": fine_tuned_response})
+
+    # --- 2. Normal RAG Response ---
+    # Generate a normal RAG response using the same context
+    with st.chat_message("assistant"):
+        normal_rag_prompt = f'''
+        You are an expert in Capgemini policies. Give a detailed answer based on the context provided.
+        
+        Question: {query}
+        
+        Context: {context}
+        '''
+        response_rag = client.chat(
+            model=st.session_state["openai_model"],
+            messages=[{"role": "system", "content": normal_rag_prompt}],
+            stream=False
+        )
+        normal_rag_response = response_rag['choices'][0]['message']['content']
+        st.markdown(normal_rag_response)
+
+    # Append the Normal RAG response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": normal_rag_response})
+
+    # --- 3. Multi-Agent RAG Response ---
     # Determine the specialized head based on the query content
     if "leave" in query.lower():
         head = "Leave Policy Expert"
@@ -84,94 +134,55 @@ if query := st.chat_input("Enter your query here?"):
     else:
         head = "General Policy Expert"
 
-    # Check for vagueness
+    # Multi-agent prompt construction
+    multi_agent_prompt = f'''
+    You are an expert in {head}. Provide a detailed response based on the context and your training.
+    
+    Question: {query}
+    
+    Context: {context}
+    '''
+    with st.chat_message("assistant"):
+        response_multi = client.chat(
+            model=st.session_state["openai_model"],
+            messages=[{"role": "system", "content": multi_agent_prompt}],
+            stream=False
+        )
+        multi_agent_response = response_multi['choices'][0]['message']['content']
+        st.markdown(multi_agent_response)
+
+    # Append the multi-agent RAG response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": multi_agent_response})
+
+    # --- Optional: Check Vagueness and Calculate Relevance Score ---
+    # Define vagueness check function
     def check_vagueness(answer):
         vague_phrases = ["I am not sure", "it depends", "vague", "uncertain", "unclear"]
         return any(phrase in answer.lower() for phrase in vague_phrases)
 
-    # Score the response relevance
+    # Define relevance score calculation
     def calculate_relevance_score(query, response):
         keywords = query.lower().split()
         matches = sum(1 for word in keywords if word in response.lower())
         return matches / len(keywords)
 
-    # Generate Fine-tuned Model response
-    with st.chat_message("assistant"):
-        fine_tuned_prompt = f'''
-        You are an expert in {head}. Provide a detailed response based on the context and your training.
-        
-        Question: {query}
-        
-        Context: {context}
-        '''
-        response_fine_tuned = client.chat(
-            model="ft:gpt-3.5-turbo-0125:personal::A9eKNr3q",
-            messages=[{"role": "system", "content": fine_tuned_prompt}],
-            stream=False
-        )
-        fine_tuned_response = response_fine_tuned['choices'][0]['message']['content']
-        st.markdown(fine_tuned_response)
+    #finetuned metrics
+    is_vague_ft = check_vagueness(fine_tuned_response )
+    relevance_score_ft = calculate_relevance_score(query, fine_tuned_response )
 
-    st.session_state.messages.append({"role": "assistant", "content": fine_tuned_response})
 
-    # Check for vagueness and relevance in Fine-tuned response
-    is_vague_fine_tuned = check_vagueness(fine_tuned_response)
-    relevance_score_fine_tuned = calculate_relevance_score(query, fine_tuned_response)
-    st.markdown(f"**Fine-tuned RAG Vagueness Detected:** {'Yes' if is_vague_fine_tuned else 'No'}")
-  
+    # Normal RAG metrics
+    is_vague_normal = check_vagueness(normal_rag_response)
+    relevance_score_normal = calculate_relevance_score(query, normal_rag_response)
 
-    # Generate Normal RAG response
-    with st.chat_message("assistant"):
-        normal_prompt = f'''
-        You are an expert in {head}. Give a detailed answer based on the context provided and your training.
-        
-        Question: {query}
-        
-        Context: {context}
-        '''
-        response_normal = client.chat(
-            model=st.session_state["openai_model"],
-            messages=[{"role": "system", "content": normal_prompt}],
-            stream=False
-        )
-        normal_response = response_normal['choices'][0]['message']['content']
-        st.markdown(normal_response)
+    # Multi-Agent RAG metrics
+    is_vague_multi = check_vagueness(multi_agent_response)
+    relevance_score_multi = calculate_relevance_score(query, multi_agent_response)
 
-    st.session_state.messages.append({"role": "assistant", "content": normal_response})
-
-    # Check for vagueness and relevance in Normal response
-    is_vague_normal = check_vagueness(normal_response)
-    relevance_score_normal = calculate_relevance_score(query, normal_response)
+    # Display vagueness and relevance scores for both RAG responses
+    st.markdown(f"**Fine Tuned Vagueness Detected:** {'Yes' if is_vague_ft  else 'No'}")
+    st.markdown(f"**Fine Tuned Relevance Score:** {relevance_score_ft:.2f}")
     st.markdown(f"**Normal RAG Vagueness Detected:** {'Yes' if is_vague_normal else 'No'}")
-
-
-    # Generate Multi-Agent RAG response
-    with st.chat_message("assistant"):
-        multi_prompt = f'''
-        You are an expert in {head}. Provide a detailed response based on the context and your training.
-        
-        Question: {query}
-        
-        Context: {context}
-        '''
-        response_multi = client.chat(
-            model=st.session_state["openai_model"],
-            messages=[{"role": "system", "content": multi_prompt}],
-            stream=False
-        )
-        multi_response = response_multi['choices'][0]['message']['content']
-        st.markdown(multi_response)
-
-    st.session_state.messages.append({"role": "assistant", "content": multi_response})
-
-    # Check for vagueness and relevance in Multi-Agent response
-    is_vague_multi = check_vagueness(multi_response)
-    relevance_score_multi = calculate_relevance_score(query, multi_response)
+    st.markdown(f"**Normal RAG Relevance Score:** {relevance_score_normal:.2f}")
     st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
-  
-
-    # Compare responses
-    st.markdown("### Comparison of Responses:")
-    st.markdown(f"**Fine-tuned RAG Relevance Score:** {relevance_score_fine_tuned:.2f}")
-    st.markdown(f"**Normal RAG Response Score:** {relevance_score_fine_tuned:.2f}")
-    st.markdown(f"**Multi-Agent RAG Response Score:** {relevance_score_fine_tuned:.2f}")
+    st.markdown(f"**Multi-Agent RAG Relevance Score:** {relevance_score_multi:.2f}")
