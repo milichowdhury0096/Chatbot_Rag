@@ -6,8 +6,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 import openai
 from langchain_community.vectorstores import Chroma
-import chromadb
-from chromadb.utils import embedding_functions
+import numpy as np
 import os
 
 # Streamlit App Configuration
@@ -17,6 +16,21 @@ st.title("Emplochat")
 # Sidebar for API Key input
 with st.sidebar:
     API_KEY = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
+
+# Initialize OpenAI client
+class OpenAIClient:
+    def __init__(self, api_key):
+        openai.api_key = api_key
+
+    def chat(self, *args, **kwargs):
+        return openai.ChatCompletion.create(*args, **kwargs)
+
+client = OpenAIClient(API_KEY)
+
+persist_directory = '/mount/src/Chatbot_multiagent/embeddings'
+
+# Initialize the Chroma DB client
+store = Chroma(persist_directory=persist_directory, collection_name="Capgemini_policy_embeddings")
 
 # Define the embedding function
 class OpenAIEmbeddingFunction:
@@ -28,34 +42,13 @@ class OpenAIEmbeddingFunction:
         embeddings = [embedding['embedding'] for embedding in response['data']]
         return embeddings
 
-# Initialize OpenAI client
-class OpenAIClient:
-    def __init__(self, api_key):
-        openai.api_key = api_key
-
-    def chat(self, *args, **kwargs):
-        return openai.ChatCompletion.create(*args, **kwargs)
-
-# Initialize the OpenAI client
-client = OpenAIClient(API_KEY)
-
-persist_directory = '/mount/src/Chatbot_multiagent/embeddings'
-
-# Initialize the Chroma DB client
-store = Chroma(persist_directory=persist_directory, collection_name="Capgemini_policy_embeddings")
-
 embed_prompt = OpenAIEmbeddingFunction()
 
 # Define the embedding retrieval function
 def retrieve_vector_db(query, n_results=2):
     embedding_vector = embed_prompt([query])[0]
     similar_embeddings = store.similarity_search_by_vector_with_relevance_scores(embedding=embedding_vector, k=n_results)
-    results = []
-    prev_embedding = []
-    for embedding in similar_embeddings:
-        if embedding not in prev_embedding:
-            results.append(embedding)
-        prev_embedding = embedding
+    results = [embedding for embedding in similar_embeddings]
     return results
 
 if "openai_model" not in st.session_state:
@@ -157,3 +150,44 @@ if query := st.chat_input("Enter your query here?"):
     # Display Multi-Agent RAG vagueness and score metrics
     st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
     st.markdown(f"**Multi-Agent RAG Relevance Score:** {relevance_score_multi:.2f}")
+
+    # Final scoring function
+    def calculate_clarity_score(response):
+        # Simple clarity check based on length and complexity
+        if len(response.split()) < 10:
+            return 0.5  # Low score for too short responses
+        elif any(word in response.lower() for word in ["complex", "difficult"]):
+            return 0.5  # Low score for complex responses
+        return 1.0  # High score for clear responses
+
+    def check_factuality(retrieved_context, response):
+        # Check if any context is directly referenced in the response
+        context_keywords = set(retrieved_context.lower().split())
+        response_keywords = set(response.lower().split())
+        if context_keywords.intersection(response_keywords):
+            return 1.0  # Factual if it references the context
+        return 0.0  # Not factual
+
+    def check_context_appropriateness(retrieved_context, response):
+        # Basic check for relevance to the retrieved context
+        if any(word in response.lower() for word in retrieved_context.lower().split()):
+            return 1.0  # Contextually appropriate
+        return 0.0  # Not appropriate
+
+    def calculate_final_score(query, response, retrieved_context):
+        relevance = calculate_relevance_score(query, response)
+        clarity = calculate_clarity_score(response)
+        vagueness_penalty = 0 if not check_vagueness(response) else -0.1
+        factuality = check_factuality(retrieved_context, response)
+        contextual_appropriateness = check_context_appropriateness(retrieved_context, response)
+
+        # Weigh and combine the scores
+        final_score = (relevance * 0.4) + (factuality * 0.3) + (clarity * 0.2) + vagueness_penalty + (contextual_appropriateness * 0.2)
+        return final_score
+
+    # Calculate final scores for both responses
+    final_score_normal = calculate_final_score(query, normal_response, context)
+    final_score_multi = calculate_final_score(query, multi_response, context)
+
+    st.markdown(f"**Final Score for Normal RAG Response:** {final_score_normal:.2f}")
+    st.markdown(f"**Final Score for Multi-Agent RAG Response:** {final_score_multi:.2f}")
