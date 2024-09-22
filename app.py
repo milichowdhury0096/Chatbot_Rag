@@ -94,7 +94,7 @@ if query := st.chat_input("Enter your query here?"):
         Context: {context}
         '''
         response_fine_tuned = client.chat(
-            model="your-fine-tuned-model-id",  # Replace with your fine-tuned model ID
+            model="ft:gpt-3.5-turbo-0125:personal::A9eKNr3q",  # Replace with your fine-tuned model ID
             messages=[{"role": "system", "content": fine_tuned_prompt}],
             stream=False
         )
