@@ -84,6 +84,22 @@ if query := st.chat_input("Enter your query here?"):
     else:
         head = "General Policy Expert"
 
+     # Check for vagueness
+    def check_vagueness(answer):
+        vague_phrases = ["I am not sure", "it depends", "vague", "uncertain", "unclear"]
+        return any(phrase in answer.lower() for phrase in vague_phrases)
+
+    is_vague_normal = check_vagueness(normal_response)
+
+    # Score the response
+    def calculate_relevance_score(query, response):
+        keywords = query.lower().split()
+        matches = sum(1 for word in keywords if word in response.lower())
+        return matches / len(keywords)
+
+    relevance_score_normal = calculate_relevance_score(query, normal_response)
+
+
     # Generate Fine-tuned Model response
     with st.chat_message("assistant"):
         fine_tuned_prompt = f'''
