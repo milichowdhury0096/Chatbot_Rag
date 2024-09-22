@@ -44,7 +44,7 @@ class OpenAIClient:
 # Initialize the OpenAI client
 client = OpenAIClient(API_KEY)
 
-persist_directory = '/mount/src/Chatbot_multiagent/embeddings'
+persist_directory = '/mount/src/Chatbot_Rag/embeddings'
 
 # Initialize the Chroma DB client
 store = Chroma(persist_directory=persist_directory, collection_name="Capgemini_policy_embeddings")
@@ -145,17 +145,32 @@ if query := st.chat_input("Enter your query here?"):
 
     is_vague_normal = check_vagueness(normal_response)
 
-    # Score the response
-    def calculate_relevance_score(query, response):
-        keywords = query.lower().split()
-        matches = sum(1 for word in keywords if word in response.lower())
-        return matches / len(keywords)
+    # Calculate Content Coverage Score
+    def calculate_content_coverage_score(query, response):
+        query_keywords = set(query.lower().split())
+        response_keywords = set(response.lower().split())
+        coverage = query_keywords.intersection(response_keywords)
+        return len(coverage) / len(query_keywords) if query_keywords else 0.0
 
-    relevance_score_normal = calculate_relevance_score(query, normal_response)
+    # Calculate Comprehensiveness Score
+    def calculate_comprehensiveness_score(query, response):
+        max_length = max(len(query.split()), 1)  # Avoid division by zero
+        response_length = len(response.split())
+    # Normalize the response length based on a maximum expected length
+    # Here, you can define an arbitrary maximum length for normalization
+    # For example, if you expect responses to not exceed 200 words
+        max_expected_length = 200
+        normalized_length = min(response_length, max_expected_length) / max_expected_length
+        return normalized_length
+
+
+    content_coverage_normal = calculate_content_coverage_score(query, normal_response)
+    comprehensiveness_normal = calculate_comprehensiveness_score(query, normal_response)
 
     # Display Normal RAG vagueness and score metrics
     st.markdown(f"**Normal RAG Vagueness Detected:** {'Yes' if is_vague_normal else 'No'}")
-    st.markdown(f"**Normal RAG Relevance Score:** {relevance_score_normal:.2f}")
+    #st.markdown(f"**Normal RAG Content Coverage Score:** {content_coverage_normal:.2f}")
+    st.markdown(f"**Normal RAG Comprehensiveness Score:** {comprehensiveness_normal:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -179,8 +194,10 @@ if query := st.chat_input("Enter your query here?"):
 
     # Check for vagueness in Multi-Agent response
     is_vague_multi = check_vagueness(multi_response)
-    relevance_score_multi = calculate_relevance_score(query, multi_response)
+    content_coverage_multi = calculate_content_coverage_score(query, multi_response)
+    comprehensiveness_multi = calculate_comprehensiveness_score(query, multi_response)
 
     # Display Multi-Agent RAG vagueness and score metrics
     st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
-    st.markdown(f"**Multi-Agent RAG Relevance Score:** {relevance_score_multi:.2f}")
+    #st.markdown(f"**Multi-Agent RAG Content Coverage Score:** {content_coverage_multi:.2f}")
+    st.markdown(f"**Multi-Agent RAG Comprehensiveness Score:** {comprehensiveness_multi:.2f}")
