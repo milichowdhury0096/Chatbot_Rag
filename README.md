@@ -14,7 +14,7 @@ Emplochat is a Streamlit application that allows users to interact with an AI ch
 - **Contextual Responses**: Generates responses based on user queries and relevant policy documents.
 - **Vagueness Detection**: The chatbot checks for vague responses and informs the user accordingly.
 
-output.jsonl consist of question and answers created from the policies which is used for creating fine tuned model im OpenAI.
+output.jsonl consist of question and answers created from the policies which is used for creating fine tuned model in OpenAI.
 
 
 ## Requirements
