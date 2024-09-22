@@ -1,0 +1,8 @@
+tiktoken
+openai==0.28
+chromadb
+langchain
+streamlit
+langchain_community
+pysqlite3-binary
+sentence_transformers
