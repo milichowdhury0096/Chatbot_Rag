@@ -7,6 +7,7 @@ import streamlit as st
 import openai
 from langchain_community.vectorstores import Chroma
 import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 import os
 
 # Streamlit App Configuration
@@ -111,17 +112,18 @@ if query := st.chat_input("Enter your query here?"):
 
     is_vague_normal = check_vagueness(normal_response)
 
-    # Score the response
-    def calculate_relevance_score(query, response):
-        keywords = query.lower().split()
-        matches = sum(1 for word in keywords if word in response.lower())
-        return matches / len(keywords)
+    # Calculate contextual relevance score
+    def calculate_contextual_relevance_score(query, response):
+        query_embedding = embed_prompt([query])[0]
+        response_embedding = embed_prompt([response])[0]
+        similarity = cosine_similarity([query_embedding], [response_embedding])[0][0]
+        return similarity
 
-    relevance_score_normal = calculate_relevance_score(query, normal_response)
+    contextual_relevance_score_normal = calculate_contextual_relevance_score(query, normal_response)
 
     # Display Normal RAG vagueness and score metrics
     st.markdown(f"**Normal RAG Vagueness Detected:** {'Yes' if is_vague_normal else 'No'}")
-    st.markdown(f"**Normal RAG Relevance Score:** {relevance_score_normal:.2f}")
+    st.markdown(f"**Normal RAG Contextual Relevance Score:** {contextual_relevance_score_normal:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -145,49 +147,10 @@ if query := st.chat_input("Enter your query here?"):
 
     # Check for vagueness in Multi-Agent response
     is_vague_multi = check_vagueness(multi_response)
-    relevance_score_multi = calculate_relevance_score(query, multi_response)
+
+    # Calculate contextual relevance score for Multi-Agent response
+    contextual_relevance_score_multi = calculate_contextual_relevance_score(query, multi_response)
 
     # Display Multi-Agent RAG vagueness and score metrics
     st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
-    st.markdown(f"**Multi-Agent RAG Relevance Score:** {relevance_score_multi:.2f}")
-
-    # Final scoring function
-    def calculate_clarity_score(response):
-        # Simple clarity check based on length and complexity
-        if len(response.split()) < 10:
-            return 0.5  # Low score for too short responses
-        elif any(word in response.lower() for word in ["complex", "difficult"]):
-            return 0.5  # Low score for complex responses
-        return 1.0  # High score for clear responses
-
-    def check_factuality(retrieved_context, response):
-        # Check if any context is directly referenced in the response
-        context_keywords = set(retrieved_context.lower().split())
-        response_keywords = set(response.lower().split())
-        if context_keywords.intersection(response_keywords):
-            return 1.0  # Factual if it references the context
-        return 0.0  # Not factual
-
-    def check_context_appropriateness(retrieved_context, response):
-        # Basic check for relevance to the retrieved context
-        if any(word in response.lower() for word in retrieved_context.lower().split()):
-            return 1.0  # Contextually appropriate
-        return 0.0  # Not appropriate
-
-    def calculate_final_score(query, response, retrieved_context):
-        relevance = calculate_relevance_score(query, response)
-        clarity = calculate_clarity_score(response)
-        vagueness_penalty = 0 if not check_vagueness(response) else -0.1
-        factuality = check_factuality(retrieved_context, response)
-        contextual_appropriateness = check_context_appropriateness(retrieved_context, response)
-
-        # Weigh and combine the scores
-        final_score = (relevance * 0.4) + (factuality * 0.3) + (clarity * 0.2) + vagueness_penalty + (contextual_appropriateness * 0.2)
-        return final_score
-
-    # Calculate final scores for both responses
-    final_score_normal = calculate_final_score(query, normal_response, context)
-    final_score_multi = calculate_final_score(query, multi_response, context)
-
-    st.markdown(f"**Final Score for Normal RAG Response:** {final_score_normal:.2f}")
-    st.markdown(f"**Final Score for Multi-Agent RAG Response:** {final_score_multi:.2f}")
+    st.markdown(f"**Multi-Agent RAG Contextual Relevance Score:** {contextual_relevance_score_multi:.2f}")
