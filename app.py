@@ -84,21 +84,16 @@ if query := st.chat_input("Enter your query here?"):
     else:
         head = "General Policy Expert"
 
-     # Check for vagueness
+    # Check for vagueness
     def check_vagueness(answer):
         vague_phrases = ["I am not sure", "it depends", "vague", "uncertain", "unclear"]
         return any(phrase in answer.lower() for phrase in vague_phrases)
 
-    is_vague_normal = check_vagueness(normal_response)
-
-    # Score the response
+    # Score the response relevance
     def calculate_relevance_score(query, response):
         keywords = query.lower().split()
         matches = sum(1 for word in keywords if word in response.lower())
         return matches / len(keywords)
-
-    relevance_score_normal = calculate_relevance_score(query, normal_response)
-
 
     # Generate Fine-tuned Model response
     with st.chat_message("assistant"):
@@ -110,21 +105,18 @@ if query := st.chat_input("Enter your query here?"):
         Context: {context}
         '''
         response_fine_tuned = client.chat(
-            model="ft:gpt-3.5-turbo-0125:personal::A9eKNr3q",  # Replace with your fine-tuned model ID
+            model="ft:gpt-3.5-turbo-0125:personal::A9eKNr3q",
             messages=[{"role": "system", "content": fine_tuned_prompt}],
             stream=False
         )
         fine_tuned_response = response_fine_tuned['choices'][0]['message']['content']
         st.markdown(fine_tuned_response)
 
-    # Append the assistant's Fine-tuned response to chat history
     st.session_state.messages.append({"role": "assistant", "content": fine_tuned_response})
 
-    # Check for vagueness in Fine-tuned response
+    # Check for vagueness and relevance in Fine-tuned response
     is_vague_fine_tuned = check_vagueness(fine_tuned_response)
     relevance_score_fine_tuned = calculate_relevance_score(query, fine_tuned_response)
-
-    # Display Fine-tuned RAG vagueness and score metrics
     st.markdown(f"**Fine-tuned RAG Vagueness Detected:** {'Yes' if is_vague_fine_tuned else 'No'}")
     st.markdown(f"**Fine-tuned RAG Relevance Score:** {relevance_score_fine_tuned:.2f}")
 
@@ -145,14 +137,11 @@ if query := st.chat_input("Enter your query here?"):
         normal_response = response_normal['choices'][0]['message']['content']
         st.markdown(normal_response)
 
-    # Append the assistant's Normal RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": normal_response})
 
-    # Check for vagueness in Normal response
+    # Check for vagueness and relevance in Normal response
     is_vague_normal = check_vagueness(normal_response)
     relevance_score_normal = calculate_relevance_score(query, normal_response)
-
-    # Display Normal RAG vagueness and score metrics
     st.markdown(f"**Normal RAG Vagueness Detected:** {'Yes' if is_vague_normal else 'No'}")
     st.markdown(f"**Normal RAG Relevance Score:** {relevance_score_normal:.2f}")
 
@@ -173,14 +162,11 @@ if query := st.chat_input("Enter your query here?"):
         multi_response = response_multi['choices'][0]['message']['content']
         st.markdown(multi_response)
 
-    # Append the assistant's Multi-Agent RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": multi_response})
 
-    # Check for vagueness in Multi-Agent response
+    # Check for vagueness and relevance in Multi-Agent response
     is_vague_multi = check_vagueness(multi_response)
     relevance_score_multi = calculate_relevance_score(query, multi_response)
-
-    # Display Multi-Agent RAG vagueness and score metrics
     st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
     st.markdown(f"**Multi-Agent RAG Relevance Score:** {relevance_score_multi:.2f}")
 
