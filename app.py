@@ -118,7 +118,7 @@ if query := st.chat_input("Enter your query here?"):
     is_vague_fine_tuned = check_vagueness(fine_tuned_response)
     relevance_score_fine_tuned = calculate_relevance_score(query, fine_tuned_response)
     st.markdown(f"**Fine-tuned RAG Vagueness Detected:** {'Yes' if is_vague_fine_tuned else 'No'}")
-    st.markdown(f"**Fine-tuned RAG Relevance Score:** {relevance_score_fine_tuned:.2f}")
+  
 
     # Generate Normal RAG response
     with st.chat_message("assistant"):
@@ -143,7 +143,7 @@ if query := st.chat_input("Enter your query here?"):
     is_vague_normal = check_vagueness(normal_response)
     relevance_score_normal = calculate_relevance_score(query, normal_response)
     st.markdown(f"**Normal RAG Vagueness Detected:** {'Yes' if is_vague_normal else 'No'}")
-    st.markdown(f"**Normal RAG Relevance Score:** {relevance_score_normal:.2f}")
+
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -168,10 +168,10 @@ if query := st.chat_input("Enter your query here?"):
     is_vague_multi = check_vagueness(multi_response)
     relevance_score_multi = calculate_relevance_score(query, multi_response)
     st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
-    st.markdown(f"**Multi-Agent RAG Relevance Score:** {relevance_score_multi:.2f}")
+  
 
     # Compare responses
     st.markdown("### Comparison of Responses:")
-    st.markdown(f"**Fine-tuned RAG Response:** {fine_tuned_response}")
-    st.markdown(f"**Normal RAG Response:** {normal_response}")
-    st.markdown(f"**Multi-Agent RAG Response:** {multi_response}")
+    st.markdown(f"**Fine-tuned RAG Relevance Score:** {relevance_score_fine_tuned:.2f}")
+    st.markdown(f"**Normal RAG Response Score:** {relevance_score_fine_tuned:.2f}")
+    st.markdown(f"**Multi-Agent RAG Response Score:** {relevance_score_fine_tuned:.2f}")
