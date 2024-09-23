@@ -21,7 +21,7 @@ https://chatbotrag-fwnbyw5vsvq9k5cpc5jauc.streamlit.app/
 - **Multiple Response Modes**: The chatbot generates responses using different methods:
   - **Normal RAG**: A general-purpose response generation using a pre-trained model.
   - **Multi-Agent RAG**: Incorporates multiple expert responses for enhanced accuracy.
-- ## ## Scoring System
+- ## Scoring System
 
 Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
 
