@@ -6,8 +6,8 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 import openai
 from langchain_community.vectorstores import Chroma
+import chromadb
 import numpy as np
-import os
 
 # Streamlit App Configuration
 st.set_page_config(layout="wide")
@@ -136,14 +136,34 @@ if query := st.chat_input("Enter your query here?"):
     # Append the assistant's Normal RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": normal_response})
 
-    # Assess the quality of the response
+    # Assess quality of the response
     def assess_quality(response):
         assessment_prompt = f"""
-        Please evaluate the following response based on its effectiveness in addressing the user's query. Rate it on a scale of 0 to 1 in increments of 0.2 for each of the following criteria:
+        Please evaluate the following response based on its effectiveness in addressing the user's query. Rate it on a scale of 0 to 1 in increments of 0.0, 0.2, 0.4, 0.6, 0.8, and 1.0 for each of the following criteria:
 
-        1. **Contextual Alignment**: How well does the response relate to the context provided? (0 = no alignment, 1 = perfect alignment)
-        2. **Clarity**: Is the response easy to understand and free from ambiguity? (0 = very unclear, 1 = completely clear)
-        3. **Depth of Insight**: Does the response provide valuable information or insights? (0 = no insight, 1 = very detailed and insightful)
+        1. **Contextual Alignment**: How well does the response relate to the context provided? 
+            - 0 = no alignment
+            - 0.2 = very weak alignment
+            - 0.4 = some alignment
+            - 0.6 = moderate alignment
+            - 0.8 = strong alignment
+            - 1.0 = perfect alignment
+
+        2. **Clarity**: Is the response easy to understand and free from ambiguity?
+            - 0 = no clarity
+            - 0.2 = very little clarity
+            - 0.4 = some clarity
+            - 0.6 = moderately clear
+            - 0.8 = mostly clear
+            - 1.0 = completely clear
+
+        3. **Depth of Insight**: Does the response provide valuable information or insights?
+            - 0 = no insight
+            - 0.2 = very little insight
+            - 0.4 = some insight
+            - 0.6 = moderate insight
+            - 0.8 = valuable insight
+            - 1.0 = very detailed and insightful
 
         Additionally, please provide a brief explanation for each score to justify your ratings.
 
@@ -160,11 +180,7 @@ if query := st.chat_input("Enter your query here?"):
             messages=[{"role": "system", "content": assessment_prompt}]
         )
 
-        # Log the raw response for debugging
-        raw_response = assessment_response['choices'][0]['message']['content']
-        st.write("Raw assessment response:", raw_response)
-
-        score_lines = raw_response.strip().split('\n')
+        score_lines = assessment_response['choices'][0]['message']['content'].strip().split('\n')
         
         scores = {}
         for line in score_lines:
@@ -172,7 +188,6 @@ if query := st.chat_input("Enter your query here?"):
                 key, value = line.split(': ')
                 score_part, explanation = value.split(' (', 1)
                 scores[key.strip()] = float(score_part) if score_part.replace('.', '', 1).isdigit() else 0.0
-                st.markdown(f"**{key.strip()} Explanation:** {explanation[:-1]}")
             except ValueError:
                 continue  # Skip lines that don't match the expected format
 
@@ -181,9 +196,8 @@ if query := st.chat_input("Enter your query here?"):
     normal_quality_scores = assess_quality(normal_response)
 
     # Display Normal RAG quality scores
-    st.markdown(f"**Normal RAG Quality Scores:**")
-    for key, score in normal_quality_scores.items():
-        st.markdown(f"- {key}: {score:.2f}")
+    for criterion, score in normal_quality_scores.items():
+        st.markdown(f"**{criterion}:** {score:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -209,6 +223,5 @@ if query := st.chat_input("Enter your query here?"):
     multi_quality_scores = assess_quality(multi_response)
 
     # Display Multi-Agent RAG quality scores
-    st.markdown(f"**Multi-Agent RAG Quality Scores:**")
-    for key, score in multi_quality_scores.items():
-        st.markdown(f"- {key}: {score:.2f}")
+    for criterion, score in multi_quality_scores.items():
+        st.markdown(f"**{criterion}:** {score:.2f}")
