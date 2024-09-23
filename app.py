@@ -141,7 +141,7 @@ if query := st.chat_input("Enter your query here?"):
     # Assess the quality of the Normal RAG response
     def assess_quality(response):
         assessment_prompt = f"""
-        Please evaluate the following response on a scale of 0 to 1 based on its relevance and informativeness:
+        Please evaluate the following response on a scale of 0 to 1 based on its effeciency to solve the answer:
 
         Response: "{response}"
 
