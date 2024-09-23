@@ -6,10 +6,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 import openai
 from langchain_community.vectorstores import Chroma
-import chromadb
-from chromadb.utils import embedding_functions
 import numpy as np
-import os
 
 # Streamlit App Configuration
 st.set_page_config(layout="wide")
@@ -95,16 +92,9 @@ if query := st.chat_input("Enter your query here?"):
     # Get the embedding for the user's query
     query_embedding = embed_prompt([query])[0]
 
-    # Calculate cosine similarity
-    def cosine_similarity(vec_a, vec_b):
-        dot_product = np.dot(vec_a, vec_b)
-        norm_a = np.linalg.norm(vec_a)
-        norm_b = np.linalg.norm(vec_b)
-        return dot_product / (norm_a * norm_b) if norm_a and norm_b else 0.0
-
     # Determine the specialized head based on cosine similarity
     head_scores = {
-        head: cosine_similarity(query_embedding, head_embedding[0])
+        head: np.dot(query_embedding, head_embedding[0]) / (np.linalg.norm(query_embedding) * np.linalg.norm(head_embedding[0]))
         for head, head_embedding in heads_embeddings.items()
     }
 
@@ -146,18 +136,13 @@ if query := st.chat_input("Enter your query here?"):
         1. **Contextual Alignment**: How well does the response relate to the context provided? (0 = no alignment, 1 = perfect alignment)
         2. **Clarity**: Is the response easy to understand and free from ambiguity? (0 = very unclear, 1 = completely clear)
         3. **Depth of Insight**: Does the response provide valuable information or insights? (0 = no insight, 1 = very detailed and insightful)
-        4. **Engagement**: Does the response encourage further dialogue or exploration of the topic? (0 = no engagement, 1 = highly engaging)
-
-        Provide a score between 0 and 1 for each criterion, followed by an overall score (0 to 1) indicating the overall quality of the response.
 
         Response: "{response}"
 
-        Format your answer as follows:
+        Please respond with scores in the following format:
         - Contextual Alignment: [score]
         - Clarity: [score]
         - Depth of Insight: [score]
-        - Engagement: [score]
-        - Overall Score: [score]
         """
 
         assessment_response = client.chat(
@@ -165,7 +150,11 @@ if query := st.chat_input("Enter your query here?"):
             messages=[{"role": "system", "content": assessment_prompt}]
         )
 
-        score_lines = assessment_response['choices'][0]['message']['content'].strip().split('\n')
+        # Log the raw response for debugging
+        raw_response = assessment_response['choices'][0]['message']['content']
+        st.write("Raw assessment response:", raw_response)
+
+        score_lines = raw_response.strip().split('\n')
         
         scores = {}
         for line in score_lines:
@@ -177,12 +166,12 @@ if query := st.chat_input("Enter your query here?"):
 
         return scores
 
+    # Get quality scores for the Normal RAG response
     normal_quality_scores = assess_quality(normal_response)
 
     # Display Normal RAG quality scores
-    for key in ['Contextual Alignment', 'Clarity', 'Depth of Insight', 'Engagement', 'Overall Score']:
-        score = normal_quality_scores.get(key, 0.0)
-        st.markdown(f"- {key}: {score:.2f}")
+    for criterion, score in normal_quality_scores.items():
+        st.markdown(f"**{criterion}:** {score:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -208,6 +197,5 @@ if query := st.chat_input("Enter your query here?"):
     multi_quality_scores = assess_quality(multi_response)
 
     # Display Multi-Agent RAG quality scores
-    for key in ['Contextual Alignment', 'Clarity', 'Depth of Insight', 'Engagement', 'Overall Score']:
-        score = multi_quality_scores.get(key, 0.0)
-        st.markdown(f"- {key}: {score:.2f}")
+    for criterion, score in multi_quality_scores.items():
+        st.markdown(f"**{criterion}:** {score:.2f}")
