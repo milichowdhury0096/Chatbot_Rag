@@ -60,4 +60,4 @@ Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
 - A complete list of required packages and their versions can be found in the [requirements.txt](requirements.txt) file.
 
 ## License
-Mit Licence
+[Mit Licence](LICENSE)
