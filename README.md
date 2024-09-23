@@ -9,9 +9,9 @@ https://chatbotrag-fwnbyw5vsvq9k5cpc5jauc.streamlit.app/
 
 # Link to Collab files
 
-- https://drive.google.com/file/d/1yZFac3xY7_YxpUXng_vBcarqQz1-fpQe/view?usp=sharing
+- https://drive.google.com/file/d/1yZFac3xY7_YxpUXng_vBcarqQz1-fpQe/view?usp=sharing            : EMBEDDINGS
 
-- https://drive.google.com/file/d/1Jd3ri31wiMnW9oh339JfW-AgVF8UJPdi/view?usp=sharing
+- https://drive.google.com/file/d/1Jd3ri31wiMnW9oh339JfW-AgVF8UJPdi/view?usp=sharing            : RAG      
 
 
 
