@@ -57,7 +57,7 @@ Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
 
 - openai == 0.28
 - pysqlite3-binary
-- More details available in <requirements.txt>
+- A complete list of required packages and their versions can be found in the `requirements.txt` file.
 
 ## License
 Mit Licence
