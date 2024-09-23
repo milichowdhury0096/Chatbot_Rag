@@ -55,7 +55,6 @@ Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
 
 ## Requirements
 
-- Python 3.8 or higher
 - openai == 0.28
 - pysqlite3-binary
 
