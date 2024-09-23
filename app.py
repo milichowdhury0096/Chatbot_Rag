@@ -139,7 +139,7 @@ if query := st.chat_input("Enter your query here?"):
     # Assess the quality of the response
     def assess_quality(response):
         assessment_prompt = f"""
-        Please evaluate the following response based on its effectiveness in addressing the user's query. Rate it on a scale of 0 to 1 for each of the following criteria:
+        Please evaluate the following response based on its effectiveness in addressing the user's query. Rate it on a scale of 0 to 1 in increments of 0.2 for each of the following criteria:
 
         1. **Contextual Alignment**: How well does the response relate to the context provided? (0 = no alignment, 1 = perfect alignment)
         2. **Clarity**: Is the response easy to understand and free from ambiguity? (0 = very unclear, 1 = completely clear)
