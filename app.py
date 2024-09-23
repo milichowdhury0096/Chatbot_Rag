@@ -179,6 +179,10 @@ if query := st.chat_input("Enter your query here?"):
 
     # Display Normal RAG quality scores
     st.markdown(f"**Normal RAG Quality Scores:**")
+    st.markdown(f"- Contextual Alignment: {normal_quality_scores['Contextual Alignment']:.2f}")
+    st.markdown(f"- Clarity: {normal_quality_scores['Clarity']:.2f}")
+    st.markdown(f"- Depth of Insight: {normal_quality_scores['Depth of Insight']:.2f}")
+    st.markdown(f"- Engagement: {normal_quality_scores['Engagement']:.2f}")
     st.markdown(f"- Overall Score: {normal_quality_scores['Overall Score']:.2f}")
 
     # Generate Multi-Agent RAG response
@@ -206,4 +210,8 @@ if query := st.chat_input("Enter your query here?"):
 
     # Display Multi-Agent RAG quality scores
     st.markdown(f"**Multi-Agent RAG Quality Scores:**")
+    st.markdown(f"- Contextual Alignment: {multi_quality_scores['Contextual Alignment']:.2f}")
+    st.markdown(f"- Clarity: {multi_quality_scores['Clarity']:.2f}")
+    st.markdown(f"- Depth of Insight: {multi_quality_scores['Depth of Insight']:.2f}")
+    st.markdown(f"- Engagement: {multi_quality_scores['Engagement']:.2f}")
     st.markdown(f"- Overall Score: {multi_quality_scores['Overall Score']:.2f}")
