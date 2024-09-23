@@ -138,7 +138,7 @@ if query := st.chat_input("Enter your query here?"):
     # Append the assistant's Normal RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": normal_response})
 
-    # Function to assess quality of responses
+    # Assess the quality of the response
     def assess_quality(response):
         assessment_prompt = f"""
         Please evaluate the following response based on its effectiveness in addressing the user's query. Rate it on a scale of 0 to 1 for each of the following criteria:
@@ -159,31 +159,30 @@ if query := st.chat_input("Enter your query here?"):
         - Engagement: [score]
         - Overall Score: [score]
         """
-        
+
         assessment_response = client.chat(
             model=st.session_state["openai_model"],
             messages=[{"role": "system", "content": assessment_prompt}]
         )
-        
+
         score_lines = assessment_response['choices'][0]['message']['content'].strip().split('\n')
         
         scores = {}
         for line in score_lines:
-            key, value = line.split(': ')
-            scores[key.strip()] = float(value) if value.replace('.', '', 1).isdigit() else 0.0
+            try:
+                key, value = line.split(': ')
+                scores[key.strip()] = float(value) if value.replace('.', '', 1).isdigit() else 0.0
+            except ValueError:
+                continue  # Skip lines that don't match the expected format
 
         return scores
 
-    # Assess the quality of the Normal RAG response
     normal_quality_scores = assess_quality(normal_response)
 
     # Display Normal RAG quality scores
-    st.markdown(f"**Normal RAG Quality Scores:**")
-    st.markdown(f"- Contextual Alignment: {normal_quality_scores['Contextual Alignment']:.2f}")
-    st.markdown(f"- Clarity: {normal_quality_scores['Clarity']:.2f}")
-    st.markdown(f"- Depth of Insight: {normal_quality_scores['Depth of Insight']:.2f}")
-    st.markdown(f"- Engagement: {normal_quality_scores['Engagement']:.2f}")
-    st.markdown(f"- Overall Score: {normal_quality_scores['Overall Score']:.2f}")
+    for key in ['Contextual Alignment', 'Clarity', 'Depth of Insight', 'Engagement', 'Overall Score']:
+        score = normal_quality_scores.get(key, 0.0)
+        st.markdown(f"- {key}: {score:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -209,9 +208,6 @@ if query := st.chat_input("Enter your query here?"):
     multi_quality_scores = assess_quality(multi_response)
 
     # Display Multi-Agent RAG quality scores
-    st.markdown(f"**Multi-Agent RAG Quality Scores:**")
-    st.markdown(f"- Contextual Alignment: {multi_quality_scores['Contextual Alignment']:.2f}")
-    st.markdown(f"- Clarity: {multi_quality_scores['Clarity']:.2f}")
-    st.markdown(f"- Depth of Insight: {multi_quality_scores['Depth of Insight']:.2f}")
-    st.markdown(f"- Engagement: {multi_quality_scores['Engagement']:.2f}")
-    st.markdown(f"- Overall Score: {multi_quality_scores['Overall Score']:.2f}")
+    for key in ['Contextual Alignment', 'Clarity', 'Depth of Insight', 'Engagement', 'Overall Score']:
+        score = multi_quality_scores.get(key, 0.0)
+        st.markdown(f"- {key}: {score:.2f}")
