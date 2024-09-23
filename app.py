@@ -138,26 +138,48 @@ if query := st.chat_input("Enter your query here?"):
     # Append the assistant's Normal RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": normal_response})
 
-    # Assess the quality of the Normal RAG response
+    # Function to assess quality of responses
     def assess_quality(response):
         assessment_prompt = f"""
-        Please evaluate the following response on a scale of 0 to 1 based on its effeciency to solve the answer:
+        Please evaluate the following response based on its effectiveness in addressing the user's query. Rate it on a scale of 0 to 1 for each of the following criteria:
+
+        1. **Contextual Alignment**: How well does the response relate to the context provided? (0 = no alignment, 1 = perfect alignment)
+        2. **Clarity**: Is the response easy to understand and free from ambiguity? (0 = very unclear, 1 = completely clear)
+        3. **Depth of Insight**: Does the response provide valuable information or insights? (0 = no insight, 1 = very detailed and insightful)
+        4. **Engagement**: Does the response encourage further dialogue or exploration of the topic? (0 = no engagement, 1 = highly engaging)
+
+        Provide a score between 0 and 1 for each criterion, followed by an overall score (0 to 1) indicating the overall quality of the response.
 
         Response: "{response}"
 
-        Provide a score between 0 and 1, where 0 means poor quality and 1 means excellent quality.
+        Format your answer as follows:
+        - Contextual Alignment: [score]
+        - Clarity: [score]
+        - Depth of Insight: [score]
+        - Engagement: [score]
+        - Overall Score: [score]
         """
+        
         assessment_response = client.chat(
             model=st.session_state["openai_model"],
             messages=[{"role": "system", "content": assessment_prompt}]
         )
-        score = assessment_response['choices'][0]['message']['content'].strip()
-        return float(score) if score.replace('.', '', 1).isdigit() else 0.0
+        
+        score_lines = assessment_response['choices'][0]['message']['content'].strip().split('\n')
+        
+        scores = {}
+        for line in score_lines:
+            key, value = line.split(': ')
+            scores[key.strip()] = float(value) if value.replace('.', '', 1).isdigit() else 0.0
 
-    normal_quality_score = assess_quality(normal_response)
+        return scores
 
-    # Display Normal RAG quality score
-    st.markdown(f"**Normal RAG Quality Score:** {normal_quality_score:.2f}")
+    # Assess the quality of the Normal RAG response
+    normal_quality_scores = assess_quality(normal_response)
+
+    # Display Normal RAG quality scores
+    st.markdown(f"**Normal RAG Quality Scores:**")
+    st.markdown(f"- Overall Score: {normal_quality_scores['Overall Score']:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -180,7 +202,8 @@ if query := st.chat_input("Enter your query here?"):
     st.session_state.messages.append({"role": "assistant", "content": multi_response})
 
     # Assess the quality of the Multi-Agent RAG response
-    multi_quality_score = assess_quality(multi_response)
+    multi_quality_scores = assess_quality(multi_response)
 
-    # Display Multi-Agent RAG quality score
-    st.markdown(f"**Multi-Agent RAG Quality Score:** {multi_quality_score:.2f}")
+    # Display Multi-Agent RAG quality scores
+    st.markdown(f"**Multi-Agent RAG Quality Scores:**")
+    st.markdown(f"- Overall Score: {multi_quality_scores['Overall Score']:.2f}")
