@@ -7,6 +7,7 @@ import streamlit as st
 import openai
 from langchain_community.vectorstores import Chroma
 import numpy as np
+import os
 
 # Streamlit App Configuration
 st.set_page_config(layout="wide")
@@ -92,9 +93,16 @@ if query := st.chat_input("Enter your query here?"):
     # Get the embedding for the user's query
     query_embedding = embed_prompt([query])[0]
 
+    # Calculate cosine similarity
+    def cosine_similarity(vec_a, vec_b):
+        dot_product = np.dot(vec_a, vec_b)
+        norm_a = np.linalg.norm(vec_a)
+        norm_b = np.linalg.norm(vec_b)
+        return dot_product / (norm_a * norm_b) if norm_a and norm_b else 0.0
+
     # Determine the specialized head based on cosine similarity
     head_scores = {
-        head: np.dot(query_embedding, head_embedding[0]) / (np.linalg.norm(query_embedding) * np.linalg.norm(head_embedding[0]))
+        head: cosine_similarity(query_embedding, head_embedding[0])
         for head, head_embedding in heads_embeddings.items()
     }
 
@@ -137,12 +145,14 @@ if query := st.chat_input("Enter your query here?"):
         2. **Clarity**: Is the response easy to understand and free from ambiguity? (0 = very unclear, 1 = completely clear)
         3. **Depth of Insight**: Does the response provide valuable information or insights? (0 = no insight, 1 = very detailed and insightful)
 
+        Additionally, please provide a brief explanation for each score to justify your ratings.
+
         Response: "{response}"
 
         Please respond with scores in the following format:
-        - Contextual Alignment: [score]
-        - Clarity: [score]
-        - Depth of Insight: [score]
+        - Contextual Alignment: [score] (explanation)
+        - Clarity: [score] (explanation)
+        - Depth of Insight: [score] (explanation)
         """
 
         assessment_response = client.chat(
@@ -160,18 +170,20 @@ if query := st.chat_input("Enter your query here?"):
         for line in score_lines:
             try:
                 key, value = line.split(': ')
-                scores[key.strip()] = float(value) if value.replace('.', '', 1).isdigit() else 0.0
+                score_part, explanation = value.split(' (', 1)
+                scores[key.strip()] = float(score_part) if score_part.replace('.', '', 1).isdigit() else 0.0
+                st.markdown(f"**{key.strip()} Explanation:** {explanation[:-1]}")
             except ValueError:
                 continue  # Skip lines that don't match the expected format
 
         return scores
 
-    # Get quality scores for the Normal RAG response
     normal_quality_scores = assess_quality(normal_response)
 
     # Display Normal RAG quality scores
-    for criterion, score in normal_quality_scores.items():
-        st.markdown(f"**{criterion}:** {score:.2f}")
+    st.markdown(f"**Normal RAG Quality Scores:**")
+    for key, score in normal_quality_scores.items():
+        st.markdown(f"- {key}: {score:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -197,5 +209,6 @@ if query := st.chat_input("Enter your query here?"):
     multi_quality_scores = assess_quality(multi_response)
 
     # Display Multi-Agent RAG quality scores
-    for criterion, score in multi_quality_scores.items():
-        st.markdown(f"**{criterion}:** {score:.2f}")
+    st.markdown(f"**Multi-Agent RAG Quality Scores:**")
+    for key, score in multi_quality_scores.items():
+        st.markdown(f"- {key}: {score:.2f}")
