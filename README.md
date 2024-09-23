@@ -15,30 +15,34 @@ Emplochat is a Streamlit application that allows users to interact with an AI ch
 - **Multiple Response Modes**: The chatbot generates responses using different methods:
   - **Normal RAG**: A general-purpose response generation using a pre-trained model.
   - **Multi-Agent RAG**: Incorporates multiple expert responses for enhanced accuracy.
-- **Vagueness Detection**: The chatbot checks for vague responses and informs the user accordingly.
-- ## Comprehensiveness Score
+- ## ## Scoring System
 
-The **Comprehensiveness Score** evaluates the extent to which a response covers the information requested in the user's query. This score ranges from 0 to 1, where:
+Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
 
-- **0** indicates that the response does not provide any relevant information compared to the query.
-- **1** signifies that the response fully meets or exceeds the expected information based on the query.
+1. **Contextual Alignment**: 
+   - **0.0**: No alignment with the context.
+   - **0.2**: Very weak alignment.
+   - **0.4**: Some alignment.
+   - **0.6**: Moderate alignment.
+   - **0.8**: Strong alignment.
+   - **1.0**: Perfect alignment with the context.
 
-### Calculation
+2. **Clarity**:
+   - **0.0**: No clarity; very confusing.
+   - **0.2**: Very little clarity; hard to understand.
+   - **0.4**: Some clarity; partially understandable.
+   - **0.6**: Moderately clear; generally easy to follow.
+   - **0.8**: Mostly clear; minor ambiguities.
+   - **1.0**: Completely clear; easy to understand.
 
-The Comprehensiveness Score is calculated using the following formula:
+3. **Depth of Insight**:
+   - **0.0**: No valuable insight; irrelevant information.
+   - **0.2**: Very little insight; superficial response.
+   - **0.4**: Some insight; basic information provided.
+   - **0.6**: Moderate insight; useful but not detailed.
+   - **0.8**: Valuable insight; adds depth to the answer.
+   - **1.0**: Very detailed and insightful; highly informative.
 
-\[
-\text{Comprehensiveness Score} = \frac{\text{Response Length}}{\text{Maximum Expected Length}}
-\]
-
-- **Response Length**: The number of words in the assistant's response.
-- **Maximum Expected Length**: A predefined maximum number of words expected in a response (e.g., 200 words). This value can be adjusted based on the expected length of informative responses.
-
-The score is normalized to ensure it remains within the range of 0 to 1, facilitating easy comparison across different responses.
-
-### Interpretation
-
-- A higher Comprehensiveness Score indicates a more thorough and informative response, while a lower score suggests that the response may lack detail or depth regarding the user's query.
 
 **output.jsonl** consist of question and answers created from the policies which is used for creating fine tuned model in OpenAI.
 
