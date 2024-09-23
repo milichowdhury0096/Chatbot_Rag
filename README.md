@@ -1,4 +1,4 @@
-# Emplochat
+# Emplochat (with RAG a
 
 Emplochat is a Streamlit application that allows users to interact with an AI chatbot trained on Capgemini policies. The chatbot utilizes OpenAI's fine-tuned models and a vector database to provide accurate and relevant responses to user queries regarding company policies, ethics, human rights, and more. 
 
@@ -19,8 +19,10 @@ https://chatbotrag-fwnbyw5vsvq9k5cpc5jauc.streamlit.app/
 
 - **Chatbot Interface**: Users can easily input their queries in a user-friendly chat interface.
 - **Multiple Response Modes**: The chatbot generates responses using different methods:
-  - **Normal RAG**: A general-purpose response generation using a pre-trained model.
-  - **Multi-Agent RAG**: Incorporates multiple expert responses for enhanced accuracy.
+  
+ - **Retrieval-Augmented Generation (RAG)**: Emplochat employs RAG techniques to enhance the chatbot's ability to generate contextually relevant responses by retrieving pertinent information from a database of Capgemini policies.  
+ - **Multi-Agent RAG**: The application also incorporates a multi-agent RAG approach, allowing the chatbot to utilize specialized agents that focus on different areas of expertise (e.g., leave policies, business ethics) for more precise and informative answers.
+   
 - ## Scoring System
 
 Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
