@@ -138,39 +138,26 @@ if query := st.chat_input("Enter your query here?"):
     # Append the assistant's Normal RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": normal_response})
 
-    # Check for vagueness
-    def check_vagueness(answer):
-        vague_phrases = ["I am not sure", "it depends", "vague", "uncertain", "unclear"]
-        return any(phrase in answer.lower() for phrase in vague_phrases)
+    # Assess the quality of the Normal RAG response
+    def assess_quality(response):
+        assessment_prompt = f"""
+        Please evaluate the following response on a scale of 0 to 1 based on its relevance, coherence, and informativeness:
 
-    is_vague_normal = check_vagueness(normal_response)
+        Response: "{response}"
 
-    # Calculate Content Coverage Score
-    def calculate_content_coverage_score(query, response):
-        query_keywords = set(query.lower().split())
-        response_keywords = set(response.lower().split())
-        coverage = query_keywords.intersection(response_keywords)
-        return len(coverage) / len(query_keywords) if query_keywords else 0.0
+        Provide a score between 0 and 1, where 0 means poor quality and 1 means excellent quality.
+        """
+        assessment_response = client.chat(
+            model=st.session_state["openai_model"],
+            messages=[{"role": "system", "content": assessment_prompt}]
+        )
+        score = assessment_response['choices'][0]['message']['content'].strip()
+        return float(score) if score.replace('.', '', 1).isdigit() else 0.0
 
-    # Calculate Comprehensiveness Score
-    def calculate_comprehensiveness_score(query, response):
-        max_length = max(len(query.split()), 1)  # Avoid division by zero
-        response_length = len(response.split())
-    # Normalize the response length based on a maximum expected length
-    # Here, you can define an arbitrary maximum length for normalization
-    # For example, if you expect responses to not exceed 200 words
-        max_expected_length = 200
-        normalized_length = min(response_length, max_expected_length) / max_expected_length
-        return normalized_length
+    normal_quality_score = assess_quality(normal_response)
 
-
-    content_coverage_normal = calculate_content_coverage_score(query, normal_response)
-    comprehensiveness_normal = calculate_comprehensiveness_score(query, normal_response)
-
-    # Display Normal RAG vagueness and score metrics
-    st.markdown(f"**Normal RAG Vagueness Detected:** {'Yes' if is_vague_normal else 'No'}")
-    #st.markdown(f"**Normal RAG Content Coverage Score:** {content_coverage_normal:.2f}")
-    st.markdown(f"**Normal RAG Comprehensiveness Score:** {comprehensiveness_normal:.2f}")
+    # Display Normal RAG quality score
+    st.markdown(f"**Normal RAG Quality Score:** {normal_quality_score:.2f}")
 
     # Generate Multi-Agent RAG response
     with st.chat_message("assistant"):
@@ -192,12 +179,8 @@ if query := st.chat_input("Enter your query here?"):
     # Append the assistant's Multi-Agent RAG response to chat history
     st.session_state.messages.append({"role": "assistant", "content": multi_response})
 
-    # Check for vagueness in Multi-Agent response
-    is_vague_multi = check_vagueness(multi_response)
-    content_coverage_multi = calculate_content_coverage_score(query, multi_response)
-    comprehensiveness_multi = calculate_comprehensiveness_score(query, multi_response)
+    # Assess the quality of the Multi-Agent RAG response
+    multi_quality_score = assess_quality(multi_response)
 
-    # Display Multi-Agent RAG vagueness and score metrics
-    st.markdown(f"**Multi-Agent RAG Vagueness Detected:** {'Yes' if is_vague_multi else 'No'}")
-    #st.markdown(f"**Multi-Agent RAG Content Coverage Score:** {content_coverage_multi:.2f}")
-    st.markdown(f"**Multi-Agent RAG Comprehensiveness Score:** {comprehensiveness_multi:.2f}")
+    # Display Multi-Agent RAG quality score
+    st.markdown(f"**Multi-Agent RAG Quality Score:** {multi_quality_score:.2f}")
