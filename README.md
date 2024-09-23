@@ -1,3 +1,12 @@
+# Emplochat
+
+Emplochat is a Streamlit application that allows users to interact with an AI chatbot trained on Capgemini policies. The chatbot utilizes OpenAI's fine-tuned models and a vector database to provide accurate and relevant responses to user queries regarding company policies, ethics, human rights, and more. 
+
+# Link to Streamlit
+
+https://chatbotrag-fwnbyw5vsvq9k5cpc5jauc.streamlit.app/
+
+
 # Link to Collab files
 
 - https://drive.google.com/file/d/1yZFac3xY7_YxpUXng_vBcarqQz1-fpQe/view?usp=sharing
@@ -5,9 +14,6 @@
 - https://drive.google.com/file/d/1Jd3ri31wiMnW9oh339JfW-AgVF8UJPdi/view?usp=sharing
 
 
-# Emplochat
-
-Emplochat is a Streamlit application that allows users to interact with an AI chatbot trained on Capgemini policies. The chatbot utilizes OpenAI's fine-tuned models and a vector database to provide accurate and relevant responses to user queries regarding company policies, ethics, human rights, and more. 
 
 ## Features
 
@@ -52,10 +58,6 @@ Responses are evaluated on a scale from 0.0 to 1.0 for the following criteria:
 - Python 3.8 or higher
 - openai == 0.28
 - pysqlite3-binary
-
-## Link to Streamlit
-
-https://chatbotrag-fwnbyw5vsvq9k5cpc5jauc.streamlit.app/
 
 ## License
 Mit Licence
